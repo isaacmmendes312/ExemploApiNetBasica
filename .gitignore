@@ -1,0 +1,21 @@
+# Arquivos de usuário e temporários
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# Pastas de build
+[Bb]in/
+[Oo]bj/
+
+# Arquivos do Entity Framework Core
+*.efbundle
+
+# Bancos de dados locais
+*.db
+*.mdf
+*.ldf
+
+# Configurações de IDE
+.vs/
+.vscode/
