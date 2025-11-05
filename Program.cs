@@ -4,9 +4,39 @@ using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// --- NOVO: TRADUÇÃO DA CONNECTION STRING ---
+// 1. Pega a string de conexão (URL) do Render
+string connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+string npgsqlConnectionString = null;
+
+if (!string.IsNullOrEmpty(connectionString))
+{
+    try
+    {
+        // 2. Converte a URL em partes (Host, Usuário, Senha, etc.)
+        var uri = new Uri(connectionString);
+        var userInfo = uri.UserInfo.Split(':');
+        var user = userInfo[0];
+        var password = userInfo[1];
+        var host = uri.Host;
+        var port = uri.Port; // Adicionado para incluir a porta
+        var database = uri.AbsolutePath.TrimStart('/');
+
+        // 3. Constrói a string de conexão no formato que o Npgsql entende
+        npgsqlConnectionString = $"Host={host};Port={port};Database={database};Username={user};Password={password};SSLMode=Require;TrustServerCertificate=true";
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"Erro ao parsear a connection string: {ex.Message}");
+    }
+}
+// --- FIM DA TRADUÇÃO ---
+
+
 // 1. Configurar o Contexto do Banco de Dados
+// AGORA USA A STRING "TRADUZIDA"
 builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"))); // Já está certo (usando Npgsql)
+    options.UseNpgsql(npgsqlConnectionString)); 
 
 // 2. Configurar o Swagger (documentação)
 builder.Services.AddEndpointsApiExplorer();
@@ -18,7 +48,7 @@ builder.Services.AddCors(options =>
     options.AddPolicy("AllowVueApp",
         policy =>
         {
-            policy.WithOrigins("http://localhost:5173", "https://SEU-APP-VUE-VAI-AQUI.vercel.app") // Já pensando no futuro
+            policy.WithOrigins("http://localhost:5173", "https://SEU-APP-VUE-VAI-AQUI.vercel.app") 
                   .AllowAnyHeader()
                   .AllowAnyMethod();
         });
@@ -26,40 +56,28 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 
-// --- MUDANÇA 1: EXECUTAR MIGRAÇÕES AUTOMATICAMENTE ---
-// Este bloco de código executa o "dotnet ef database update" para nós
-// toda vez que a API é iniciada no servidor.
+// Executa as migrações automaticamente
 using (var scope = app.Services.CreateScope())
 {
     var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    
-    // Aplica qualquer migração pendente (cria o banco de dados e as tabelas)
     dbContext.Database.Migrate();
 }
-// --- FIM DA MUDANÇA 1 ---
-
 
 // Configurar o pipeline do app
-
-// --- MUDANÇA 2: MOVER O SWAGGER PARA FORA DO "IF" ---
-// Queremos ver nossa documentação no Render (Produção)
 app.UseSwagger();
 app.UseSwaggerUI();
-// --- FIM DA MUDANÇA 2 ---
 
 if (app.Environment.IsDevelopment())
 {
-    // O 'if' agora pode ficar vazio, ou você pode deletá-lo
+    // O 'if' agora pode ficar vazio
 }
 
-// app.UseHttpsRedirection(); // CORRETO: Já removemos isso
+// app.UseHttpsRedirection(); // Correto, continua removido
 
-// 4. (IMPORTANTE) Aplicar a política de CORS
 app.UseCors("AllowVueApp");
 
 
-// --- NOSSOS ENDPOINTS (A API DE FATO) ---
-// (Nenhuma mudança necessária aqui)
+// --- ENDPOINTS (Sem mudanças) ---
 
 // GET: /api/tarefas
 app.MapGet("/api/tarefas", async (AppDbContext context) =>
