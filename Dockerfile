@@ -4,7 +4,7 @@ WORKDIR /src
 COPY *.csproj .
 RUN dotnet restore
 COPY . .
-RUN dotnet publish -c Release -o /app/publish
+RUN dotnet publish "ExemploApiNetBasica.csproj" -c Release -o /app/publish
 
 # Estágio 2: Final
 FROM mcr.microsoft.com/dotnet/aspnet:7.0 AS final

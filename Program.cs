@@ -33,7 +33,7 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-app.UseHttpsRedirection();
+//app.UseHttpsRedirection();
 
 // 4. (IMPORTANTE) Aplicar a política de CORS
 app.UseCors("AllowVueApp");
