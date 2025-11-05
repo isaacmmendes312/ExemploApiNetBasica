@@ -46,13 +46,16 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-// 3. (IMPORTANTE) Adicionar CORS
+// 3. Adicionar CORS
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowVueApp",
         policy =>
         {
-            policy.WithOrigins("http://localhost:5173", "https://SEU-APP-VUE-VAI-AQUI.vercel.app") 
+            policy.WithOrigins(
+                "http://localhost:5173", 
+                "https://vue-consumindo-api.vercel.app"
+            ) 
                   .AllowAnyHeader()
                   .AllowAnyMethod();
         });
