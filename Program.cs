@@ -6,7 +6,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 // 1. Configurar o Contexto do Banco de Dados
 builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection")));
+    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 // 2. Configurar o Swagger (documentação)
 builder.Services.AddEndpointsApiExplorer();
