@@ -4,37 +4,41 @@ using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// --- NOVO: TRADUÇÃO DA CONNECTION STRING ---
+// --- NOVO (Corrigido): TRADUÇÃO DA CONNECTION STRING ---
 // 1. Pega a string de conexão (URL) do Render
-string connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
-string npgsqlConnectionString = null;
+string connectionString = builder.Configuration.GetConnectionString("DefaultConnection") ?? "";
+string npgsqlConnectionString = "";
 
 if (!string.IsNullOrEmpty(connectionString))
 {
     try
     {
-        // 2. Converte a URL em partes (Host, Usuário, Senha, etc.)
         var uri = new Uri(connectionString);
         var userInfo = uri.UserInfo.Split(':');
         var user = userInfo[0];
         var password = userInfo[1];
         var host = uri.Host;
-        var port = uri.Port; // Adicionado para incluir a porta
+
+        // --- A CORREÇÃO ESTÁ AQUI ---
+        // Se a porta não for especificada na URL, uri.Port retorna -1.
+        // O PostgreSQL usa a porta 5432 por padrão.
+        var port = uri.Port > 0 ? uri.Port : 5432;
+        // --- FIM DA CORREÇÃO ---
+
         var database = uri.AbsolutePath.TrimStart('/');
 
-        // 3. Constrói a string de conexão no formato que o Npgsql entende
         npgsqlConnectionString = $"Host={host};Port={port};Database={database};Username={user};Password={password};SSLMode=Require;TrustServerCertificate=true";
     }
     catch (Exception ex)
     {
         Console.WriteLine($"Erro ao parsear a connection string: {ex.Message}");
+        // Trava a aplicação se a string for inválida mas não nula
+        throw new InvalidOperationException("Não foi possível parsear a connection string do BD.", ex);
     }
 }
-// --- FIM DA TRADUÇÃO ---
 
 
 // 1. Configurar o Contexto do Banco de Dados
-// AGORA USA A STRING "TRADUZIDA"
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(npgsqlConnectionString)); 
 
@@ -78,6 +82,7 @@ app.UseCors("AllowVueApp");
 
 
 // --- ENDPOINTS (Sem mudanças) ---
+// (O código dos MapGet, MapPost, MapPut, MapDelete fica aqui)
 
 // GET: /api/tarefas
 app.MapGet("/api/tarefas", async (AppDbContext context) =>
@@ -119,5 +124,6 @@ app.MapDelete("/api/tarefas/{id}", async (AppDbContext context, int id) =>
     await context.SaveChangesAsync();
     return Results.NoContent();
 });
+
 
 app.Run();
